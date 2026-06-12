@@ -39,6 +39,7 @@ class InventoryRepository {
     required String fridgeId,
     required String itemName,
     required DateTime expirationDate,
+    String? masterProductId,
   }) async {
     try {
        final userId = _supabase.auth.currentUser?.id;
@@ -49,6 +50,7 @@ class InventoryRepository {
         'item_name': itemName,
         'expiration_date': expirationDate.toIso8601String(),
         'added_by': userId,
+        'master_product_id': masterProductId,
       });
     } catch (e) {
       throw Exception('Failed to add item: $e');

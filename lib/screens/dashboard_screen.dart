@@ -91,9 +91,21 @@ class DashboardScreen extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/manual-entry'),
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'scan_btn',
+            onPressed: () => context.push('/scanner'),
+            child: const Icon(Icons.barcode_reader),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: 'manual_btn',
+            onPressed: () => context.push('/manual-entry'),
+            child: const Icon(Icons.edit),
+          ),
+        ],
       ),
     );
   }

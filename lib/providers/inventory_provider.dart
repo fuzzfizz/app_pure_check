@@ -3,7 +3,18 @@ import '../models/inventory_models.dart';
 import '../services/inventory_repository.dart';
 
 // Provider to hold the currently selected Fridge ID
-final selectedFridgeIdProvider = StateProvider<String?>((ref) => null);
+class SelectedFridgeIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setId(String id) {
+    state = id;
+  }
+}
+
+final selectedFridgeIdProvider = NotifierProvider<SelectedFridgeIdNotifier, String?>(() {
+  return SelectedFridgeIdNotifier();
+});
 
 // FutureProvider to fetch the user's fridges
 final userFridgesProvider = FutureProvider<List<Fridge>>((ref) async {
@@ -14,7 +25,7 @@ final userFridgesProvider = FutureProvider<List<Fridge>>((ref) async {
     // We use a microtask to avoid modifying providers during build phase
     Future.microtask(() {
        if(ref.read(selectedFridgeIdProvider) == null) {
-          ref.read(selectedFridgeIdProvider.notifier).state = fridges.first.id;
+          ref.read(selectedFridgeIdProvider.notifier).setId(fridges.first.id);
        }
     });
   }
@@ -35,7 +46,7 @@ class InventoryNotifier extends Notifier<void> {
   @override
   void build() {}
 
-  Future<void> addManualItem(String name, DateTime expiry) async {
+  Future<void> addManualItem(String name, DateTime expiry, {String? masterProductId}) async {
     final fridgeId = ref.read(selectedFridgeIdProvider);
     if (fridgeId == null) throw Exception("No fridge selected");
 
@@ -43,6 +54,7 @@ class InventoryNotifier extends Notifier<void> {
       fridgeId: fridgeId,
       itemName: name,
       expirationDate: expiry,
+      masterProductId: masterProductId,
     );
     // Invalidate the provider to force a re-fetch of the list
     ref.invalidate(inventoryProvider);
