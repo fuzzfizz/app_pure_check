@@ -1,24 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 
 class AuthNotifier extends Notifier<bool> {
   @override
   bool build() {
-    // Initial state is false. We can trigger an async check afterwards.
-    checkAuthStatus();
-    return false;
-  }
+    // Listen to Supabase auth state changes natively
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      state = session != null;
+    });
 
-  Future<void> checkAuthStatus() async {
-    final isAuth = await authService.isAuthenticated();
-    state = isAuth;
+    // Initial state
+    return Supabase.instance.client.auth.currentSession != null;
   }
 
   Future<void> login(String email, String password) async {
-    final success = await authService.login(email, password);
-    if (success) {
-      state = true;
-    }
+    await authService.login(email, password);
   }
 
   Future<void> register(String email, String password) async {
@@ -27,7 +25,6 @@ class AuthNotifier extends Notifier<bool> {
 
   Future<void> logout() async {
     await authService.logout();
-    state = false;
   }
 }
 
