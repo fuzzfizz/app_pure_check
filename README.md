@@ -1,47 +1,47 @@
-# FreshTrack - Smart Inventory Management
+# PureCheck - AI Skincare Allergen & Suitability Tracker
 
-Welcome to the official Flutter application for **FreshTrack**, a smart refrigerator and inventory management app designed to track food expiration dates and prevent food waste.
+Welcome to the official Flutter application for **PureCheck**, a centralized skincare verification engine. PureCheck is designed to prevent allergic reactions and analyze product suitability by combining barcode scanning, external data fetching, Human-in-the-Loop verification, and AI-driven reasoning tailored to your individual skin profile.
 
-This project is built with Flutter and Riverpod for state management, and it communicates directly with a Supabase backend for authentication, database, and storage services.
+## 🏗️ Key Features
+*   **Authentication & Personalization:** Secure user login and personalized skin profile (Skin Type, Concerns, Allergen History).
+*   **Smart Barcode Scanning:** Identify products instantly via barcode scanning.
+*   **AI-Powered Analysis:** Aggregates verified ingredient lists with user profiles to highlight red flags (allergens) and suitability for your skin type.
+*   **Human-in-the-Loop Verification:** Crowdsourced verification for products not found in the master database.
+*   **Self-Feeding Knowledge Base:** Local caching of verified data ensures fast future verification.
 
-## 🏗️ Tech Stack
-
-*   **Frontend:** Flutter (Riverpod State Management, GoRouter Navigation)
-*   **Backend:** Supabase (PostgreSQL, Auth, Storage)
-*   **Platforms:** Android, iOS (and others supported by Flutter)
+## 🛠️ Tech Stack
+*   **Frontend:** Flutter (State Management: Riverpod)
+*   **Backend & Database:** Supabase (Auth, PostgreSQL, Edge Functions)
+*   **AI Engine:** Google Gemini API
+*   **External Data APIs:** Open Beauty Facts API, Google Custom Search JSON API
+*   **Reference Knowledge:** INCIdecoder
 
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
-*   Flutter SDK installed (check with `flutter doctor`)
-*   An editor like VS Code or Android Studio with the Flutter plugin.
-*   Access to the project's Supabase instance.
+*   Flutter SDK (check with `flutter doctor`)
+*   Access to Supabase instance.
+*   Google Gemini API Key.
 
 ### 2. Environment Setup
-This project uses a `.env` file to manage Supabase credentials.
-
-1.  Navigate to the `app_fresh_track` directory.
-2.  Create a file named `.env` by copying the `.env.example`.
-3.  Fill in the `SUPABASE_URL` and `SUPABASE_ANON_KEY` with the credentials from your Supabase project dashboard.
+1.  Navigate to `app_pure_check/`.
+2.  Create `.env` based on `.env.example`.
+3.  Configure `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `GEMINI_API_KEY`.
 
 ```env
-# app_fresh_track/.env
+# app_pure_check/.env
 SUPABASE_URL=YOUR_SUPABASE_URL_HERE
 SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY_HERE
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
 ```
 
-### 3. Install Dependencies
-Run the following command from the `app_fresh_track` directory to fetch all required packages:
+### 3. Install & Run
+Run these commands from the `app_pure_check/` directory:
+
 ```bash
 flutter pub get
-```
-
-### 4. Run the Application
-Start the application on your desired emulator or physical device:
-```bash
 flutter run
 ```
 
 ## 🗺️ Project Roadmap
-
-The development of this application is broken down into several phases. For a detailed overview of the architecture, features, and QA scenarios for each phase, please refer to the main [ROADMAP.md](../../ROADMAP.md) in the root of the repository.
+The development of this application is broken down into several phases, focusing on an **Architecture First** approach to ensure maintainability for our 2-person team (Developer & QA). For a detailed overview of the architecture, database schema, and QA scenarios for each phase, please refer to the main [ROADMAP.md](../ROADMAP.md) in the root of the repository.
