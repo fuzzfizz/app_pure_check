@@ -1,21 +1,23 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_provider.dart';
+import '../controllers/auth_controller.dart';
 import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/dashboard_screen.dart';
+import '../screens/profile_edit_screen.dart';
+import '../screens/allergen_selection_screen.dart';
 import '../screens/manual_entry_screen.dart';
 import '../screens/scanner_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final isAuth = ref.watch(authStateProvider);
+  final authState = ref.watch(authControllerProvider);
 
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
       final loggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
 
-      if (!isAuth) {
+      if (!authState.isAuthenticated) {
         return loggingIn ? null : '/login';
       }
 
@@ -37,6 +39,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/dashboard',
         builder: (context, state) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/profile-edit',
+        builder: (context, state) => const ProfileEditScreen(),
+      ),
+      GoRoute(
+        path: '/allergens',
+        builder: (context, state) => const AllergenSelectionScreen(),
       ),
       GoRoute(
         path: '/manual-entry',

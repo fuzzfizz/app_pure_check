@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/inventory_provider.dart';
+import '../controllers/manual_entry_controller.dart';
 import '../models/master_product.dart';
-import '../services/barcode_service.dart';
-import 'package:intl/intl.dart';
 
 class ManualEntryScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? extraData;
@@ -16,10 +14,12 @@ class ManualEntryScreen extends ConsumerStatefulWidget {
 
 class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
   final _nameController = TextEditingController();
-  DateTime? _selectedDate;
-  bool _isLoading = false;
+  final _brandController = TextEditingController();
+  final _ingredientsController = TextEditingController();
+  
   String? _barcode;
   MasterProduct? _product;
+  bool _isReview = false;
 
   @override
   void initState() {
@@ -27,120 +27,137 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
     if (widget.extraData != null) {
       _barcode = widget.extraData!['barcode'];
       _product = widget.extraData!['product'] as MasterProduct?;
+      _isReview = widget.extraData!['is_review'] ?? false;
 
       if (_product != null) {
-        _nameController.text = _product!.name;
+        _nameController.text = _product!.productName;
+        _brandController.text = _product!.brand ?? '';
       }
     }
   }
 
-  void _presentDatePicker() {
-    showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000), 
-      lastDate: DateTime(2100),
-    ).then((pickedDate) {
-      if (pickedDate == null) return;
-      setState(() {
-        _selectedDate = pickedDate;
-      });
-    });
-  }
-
-  void _saveItem() async {
-    if (_nameController.text.isEmpty || _selectedDate == null) {
+  void _saveItem() {
+    if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a name and select a date.')),
+        const SnackBar(content: Text('Please enter a product name.')),
+      );
+      return;
+    }
+    if (_ingredientsController.text.trim().isEmpty && !_isReview) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter the ingredients.')),
       );
       return;
     }
 
-    setState(() => _isLoading = true);
-
-    try {
-      String? masterProductId = _product?.id;
-
-      // Tier 4: Crowdsourcing Fallback
-      if (masterProductId == null && _barcode != null) {
-        final newProduct = await barcodeService.crowdsourceProduct(
-          barcode: _barcode!,
-          name: _nameController.text.trim(),
-        );
-        masterProductId = newProduct.id;
-      }
-
-      await ref.read(inventoryActionProvider.notifier).addManualItem(
-            _nameController.text.trim(),
-            _selectedDate!,
-            masterProductId: masterProductId,
-          );
-      if (mounted) {
-        context.pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (_barcode == null) {
+      // In a real app we might generate a fake barcode or require one
+      _barcode = 'MANUAL-${DateTime.now().millisecondsSinceEpoch}';
     }
+
+    ref.read(manualEntryControllerProvider.notifier).submitProduct(
+      barcode: _barcode!,
+      name: _nameController.text.trim(),
+      brand: _brandController.text.trim(),
+      ingredientsText: _ingredientsController.text.trim(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _brandController.dispose();
+    _ingredientsController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(manualEntryControllerProvider, (previous, next) {
+      if (next.error != null && previous?.error != next.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${next.error}')),
+        );
+      }
+      if (next.isSuccess && !(previous?.isSuccess ?? false)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Product submitted successfully.')),
+        );
+        context.go('/'); // Return to dashboard or previous screen
+      }
+    });
+
+    final state = ref.watch(manualEntryControllerProvider);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_product != null ? 'Confirm Details' : 'Add Item'),
+        title: Text(_isReview ? 'Confirm Details' : 'Manual Entry'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (_barcode != null && _product == null)
+            if (_barcode != null && !_isReview)
               Container(
                 padding: const EdgeInsets.all(8),
                 margin: const EdgeInsets.only(bottom: 16),
                 color: Colors.amber.shade100,
                 child: const Text(
-                  'Barcode not found in database. Please enter the details manually to help build our database!',
+                  'Barcode not found. Please enter the details manually and provide the ingredients to help verify this product!',
                   style: TextStyle(color: Colors.black87),
                 ),
               ),
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Item Name'),
-              maxLength: 255, 
+              decoration: const InputDecoration(labelText: 'Product Name *'),
+              enabled: !_isReview,
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _selectedDate == null
-                        ? 'No Date Chosen!'
-                        : 'Expires: ${DateFormat('MMM dd, yyyy').format(_selectedDate!)}',
-                  ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _brandController,
+              decoration: const InputDecoration(labelText: 'Brand (Optional)'),
+              enabled: !_isReview,
+            ),
+            const SizedBox(height: 16),
+            if (!_isReview) ...[
+              const Text(
+                'Ingredients List',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _ingredientsController,
+                decoration: const InputDecoration(
+                  hintText: 'Type or paste the ingredients list here...',
+                  border: OutlineInputBorder(),
                 ),
-                TextButton(
-                  onPressed: _presentDatePicker,
-                  child: const Text('Choose Expiration Date'),
-                )
-              ],
-            ),
-            const Spacer(),
-            _isLoading
-                ? const CircularProgressIndicator()
+                maxLines: 5,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                   // Future Phase: Take photo and run OCR
+                   ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('OCR feature coming in future update.')),
+                   );
+                },
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Take Photo of Ingredients (Coming Soon)'),
+                style: ElevatedButton.styleFrom(
+                   backgroundColor: Colors.grey.shade200,
+                   foregroundColor: Colors.black87,
+                ),
+              ),
+            ],
+            const SizedBox(height: 32),
+            state.isLoading
+                ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton(
                     onPressed: _saveItem,
                     style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50),
                         padding: const EdgeInsets.symmetric(vertical: 16)),
-                    child: const Text('Save Item'),
+                    child: Text(_isReview ? 'Proceed to Analysis' : 'Submit Product'),
                   )
           ],
         ),

@@ -11,23 +11,23 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
-    publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  runApp(const ProviderScope(child: FreshTrackApp()));
+  runApp(const ProviderScope(child: PureCheckApp()));
 }
 
-class FreshTrackApp extends ConsumerWidget {
-  const FreshTrackApp({Key? key}) : super(key: key);
+class PureCheckApp extends ConsumerWidget {
+  const PureCheckApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'FreshTrack',
+      title: 'PureCheck',
       theme: ThemeData(
-        primarySwatch: Colors.green,
+        primarySwatch: Colors.blue,
         useMaterial3: true,
       ),
       routerConfig: router,
