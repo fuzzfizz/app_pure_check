@@ -5,23 +5,22 @@ Welcome to the official Flutter application for **PureCheck**, a centralized ski
 ## 🏗️ Key Features
 *   **Authentication & Personalization:** Secure user login and personalized skin profile (Skin Type, Concerns, Allergen History).
 *   **Smart Barcode Scanning:** Identify products instantly via barcode scanning.
-*   **AI-Powered Analysis:** Aggregates verified ingredient lists with user profiles to highlight red flags (allergens) and suitability for your skin type.
+*   **AI-Powered Analysis:** Aggregates verified ingredient lists with user profiles to highlight red flags (allergens) and suitability for your skin type via Gemini AI.
 *   **Human-in-the-Loop Verification:** Crowdsourced verification for products not found in the master database.
-*   **Self-Feeding Knowledge Base:** Local caching of verified data ensures fast future verification.
+*   **Self-Feeding Knowledge Base:** Verified product data is cached to the Master Database via secure Edge Functions, ensuring fast future verification.
 
 ## 🛠️ Tech Stack
 *   **Frontend:** Flutter (State Management: Riverpod)
 *   **Backend & Database:** Supabase (Auth, PostgreSQL, Edge Functions)
 *   **AI Engine:** Google Gemini API
-*   **External Data APIs:** Open Beauty Facts API, Google Custom Search JSON API
-*   **Reference Knowledge:** INCIdecoder
+*   **External Data APIs:** Open Beauty Facts API
 
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
-*   Flutter SDK (check with `flutter doctor`)
-*   Access to Supabase instance.
-*   Google Gemini API Key.
+*   Flutter SDK
+*   Access to a Supabase project (Remote or Local)
+*   Google Gemini API Key
 
 ### 2. Environment Setup
 1.  Navigate to `app_pure_check/`.
@@ -44,4 +43,4 @@ flutter run
 ```
 
 ## 🗺️ Project Roadmap
-The development of this application is broken down into several phases, focusing on an **Architecture First** approach to ensure maintainability for our 2-person team (Developer & QA). For a detailed overview of the architecture, database schema, and QA scenarios for each phase, please refer to the main [ROADMAP.md](../ROADMAP.md) in the root of the repository.
+The development of this application is broken down into five phases, focusing on an **Architecture First** approach. For a detailed overview of the architecture, database schema, and QA scenarios, please refer to the main [ROADMAP.md](../ROADMAP.md) in the root of the repository.
