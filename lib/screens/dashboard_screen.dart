@@ -1,111 +1,92 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/auth_provider.dart';
-import '../providers/inventory_provider.dart';
-import 'package:intl/intl.dart';
+import '../controllers/auth_controller.dart';
+import '../controllers/profile_controller.dart';
 
 class DashboardScreen extends ConsumerWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final fridgesAsync = ref.watch(userFridgesProvider);
-    final inventoryAsync = ref.watch(inventoryProvider);
+    final profileState = ref.watch(profileControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Fridge'),
+        title: const Text('PureCheck Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              ref.read(authStateProvider.notifier).logout();
+              ref.read(authControllerProvider.notifier).logout();
             },
           )
         ],
       ),
-      body: fridgesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-        data: (fridges) {
-          if (fridges.isEmpty) {
-            return const Center(child: Text('No fridge found.'));
-          }
-
-          return inventoryAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) => Center(child: Text('Error: $err')),
-            data: (items) {
-              if (items.isEmpty) {
-                return const Center(
-                  child: Text('Your fridge is empty.\nTap + to add items.'),
-                );
-              }
-
-              return ListView.builder(
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  final isExpired = item.expirationDate.isBefore(DateTime.now());
-                  final formattedDate = DateFormat('MMM dd, yyyy').format(item.expirationDate);
-
-                  return ListTile(
-                    title: Text(
-                      item.itemName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: isExpired ? Colors.red : null,
-                      ),
-                    ),
-                    subtitle: Text('Expires: $formattedDate'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isExpired)
-                          const Padding(
-                            padding: EdgeInsets.only(right: 8.0),
-                            child: Chip(
-                              label: Text('Expired', style: TextStyle(color: Colors.white, fontSize: 10)),
-                              backgroundColor: Colors.red,
+      body: profileState.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Skin Profile', style: Theme.of(context).textTheme.titleLarge),
+                          const SizedBox(height: 8),
+                          Text('Type: ${profileState.profile?.skinType ?? 'Unknown'}'),
+                          Text('Concerns: ${profileState.profile?.skinConcerns.join(', ') ?? 'None'}'),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => context.push('/profile-edit'),
+                              child: const Text('Edit Profile'),
                             ),
                           ),
-                        IconButton(
-                          icon: const Icon(Icons.check_circle_outline, color: Colors.green),
-                          onPressed: () {
-                             ref.read(inventoryActionProvider.notifier).consumeItem(item.id);
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
-                          onPressed: () {
-                             ref.read(inventoryActionProvider.notifier).deleteItem(item.id);
-                          },
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            heroTag: 'scan_btn',
-            onPressed: () => context.push('/scanner'),
-            child: const Icon(Icons.barcode_reader),
-          ),
-          const SizedBox(height: 16),
-          FloatingActionButton(
-            heroTag: 'manual_btn',
-            onPressed: () => context.push('/manual-entry'),
-            child: const Icon(Icons.edit),
-          ),
-        ],
+                  ),
+                  const SizedBox(height: 16),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Known Allergens', style: Theme.of(context).textTheme.titleLarge),
+                          const SizedBox(height: 8),
+                          if (profileState.userAllergens.isEmpty)
+                            const Text('No allergens selected.')
+                          else
+                            Wrap(
+                              spacing: 8,
+                              children: profileState.userAllergens
+                                  .map((a) => Chip(label: Text(a.name)))
+                                  .toList(),
+                            ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => context.push('/allergens'),
+                              child: const Text('Manage Allergens'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/scanner'),
+        icon: const Icon(Icons.qr_code_scanner),
+        label: const Text('Scan Product'),
       ),
     );
   }

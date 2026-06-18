@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/auth_provider.dart';
+import '../controllers/auth_controller.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -13,34 +13,30 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
   bool _isPasswordObscured = true;
 
   void _login() async {
-    setState(() => _isLoading = true);
     try {
-      await ref.read(authStateProvider.notifier).login(
+      await ref.read(authControllerProvider.notifier).login(
             _emailController.text.trim(),
             _passwordController.text.trim(),
           );
-      // Navigation is handled by go_router redirect listener
+      // Navigation is handled by go_router redirect
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('FreshTrack Login')),
+      appBar: AppBar(title: const Text('PureCheck Login')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -70,7 +66,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               obscureText: _isPasswordObscured,
             ),
             const SizedBox(height: 24),
-            _isLoading
+            if (authState.error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(authState.error!, style: const TextStyle(color: Colors.red)),
+              ),
+            authState.isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
                     onPressed: _login,

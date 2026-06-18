@@ -1,31 +1,39 @@
 class MasterProduct {
-  final String id;
   final String barcode;
-  final String name;
+  final String productName;
   final String? brand;
-  final String? category;
   final String? imageUrl;
-  final String dataSource;
+  final String source;
+  final bool isVerified;
 
   MasterProduct({
-    required this.id,
     required this.barcode,
-    required this.name,
+    required this.productName,
     this.brand,
-    this.category,
     this.imageUrl,
-    required this.dataSource,
+    this.source = 'user_submitted',
+    this.isVerified = false,
   });
 
   factory MasterProduct.fromJson(Map<String, dynamic> json) {
     return MasterProduct(
-      id: json['id'],
-      barcode: json['barcode'],
-      name: json['name'],
-      brand: json['brand'],
-      category: json['category'],
-      imageUrl: json['image_url'],
-      dataSource: json['data_source'] ?? 'user_crowdsourced',
+      barcode: json['barcode'] as String,
+      productName: json['product_name'] as String,
+      brand: json['brand'] as String?,
+      imageUrl: json['image_url'] as String?,
+      source: json['source'] as String? ?? 'user_submitted',
+      isVerified: json['is_verified'] as bool? ?? false,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'barcode': barcode,
+      'product_name': productName,
+      'brand': brand,
+      'image_url': imageUrl,
+      'source': source,
+      'is_verified': isVerified,
+    };
   }
 }

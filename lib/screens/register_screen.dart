@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/auth_provider.dart';
+import '../controllers/auth_controller.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -13,13 +13,11 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
   bool _isPasswordObscured = true;
 
   void _register() async {
-    setState(() => _isLoading = true);
     try {
-      await ref.read(authStateProvider.notifier).register(
+      await ref.read(authControllerProvider.notifier).register(
             _emailController.text.trim(),
             _passwordController.text.trim(),
           );
@@ -27,7 +25,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registration successful! Please login.')),
         );
-        context.pop(); // Go back to login
+        context.pop();
       }
     } catch (e) {
       if (mounted) {
@@ -35,17 +33,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           SnackBar(content: Text(e.toString())),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
+      appBar: AppBar(title: const Text('Register for PureCheck')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -75,7 +71,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               obscureText: _isPasswordObscured,
             ),
             const SizedBox(height: 24),
-            _isLoading
+            if (authState.error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(authState.error!, style: const TextStyle(color: Colors.red)),
+              ),
+            authState.isLoading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
                     onPressed: _register,

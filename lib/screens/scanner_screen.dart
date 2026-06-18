@@ -1,69 +1,86 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:go_router/go_router.dart';
-import '../services/barcode_service.dart';
+import '../controllers/scanner_controller.dart';
 
-class ScannerScreen extends StatefulWidget {
+class ScannerScreen extends ConsumerStatefulWidget {
   const ScannerScreen({super.key});
 
   @override
-  State<ScannerScreen> createState() => _ScannerScreenState();
+  ConsumerState<ScannerScreen> createState() => _ScannerScreenState();
 }
 
-class _ScannerScreenState extends State<ScannerScreen> {
-  bool _isProcessing = false;
-  final MobileScannerController _controller = MobileScannerController();
+class _ScannerScreenState extends ConsumerState<ScannerScreen> {
+  final MobileScannerController _cameraController = MobileScannerController();
 
-  void _onDetect(BarcodeCapture capture) async {
-    if (_isProcessing) return;
-    
+  @override
+  void initState() {
+    super.initState();
+    // Start scanning when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+       ref.read(scannerControllerProvider.notifier).startScanning();
+    });
+  }
+
+  @override
+  void dispose() {
+    _cameraController.dispose();
+    super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    final state = ref.read(scannerControllerProvider);
+    if (!state.isScanning || state.isProcessing) return;
+
     final List<Barcode> barcodes = capture.barcodes;
     if (barcodes.isEmpty) return;
 
     final String? code = barcodes.first.rawValue;
     if (code == null) return;
 
-    setState(() => _isProcessing = true);
-    _controller.stop(); // Pause scanning while processing
-
-    try {
-      final product = await barcodeService.lookupBarcode(code);
-      
-      if (mounted) {
-        // Pass the result to the manual entry screen
-        context.pushReplacement('/manual-entry', extra: {
-            'barcode': code,
-            'product': product, // May be null if not found
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error scanning: $e')),
-        );
-        setState(() => _isProcessing = false);
-        _controller.start(); // Resume scanning
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+    // Process barcode
+    ref.read(scannerControllerProvider.notifier).processBarcode(code);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Listen for state changes (errors or routing)
+    ref.listen(scannerControllerProvider, (previous, next) {
+      if (next.error != null && previous?.error != next.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${next.error}')),
+        );
+      }
+
+      if (next.shouldRouteToManualEntry) {
+         context.pushReplacement('/manual-entry', extra: {
+           'barcode': next.scannedBarcode,
+         });
+         ref.read(scannerControllerProvider.notifier).resetRouting();
+      }
+
+      if (next.shouldRouteToProductReview) {
+         context.pushReplacement('/manual-entry', extra: { // Using manual entry for review for now, or separate review screen
+           'barcode': next.scannedBarcode,
+           'product': next.foundProduct,
+           'is_review': true,
+         });
+         ref.read(scannerControllerProvider.notifier).resetRouting();
+      }
+    });
+
+    final state = ref.watch(scannerControllerProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Scan Product Barcode')),
       body: Stack(
         children: [
           MobileScanner(
-            controller: _controller,
+            controller: _cameraController,
             onDetect: _onDetect,
           ),
-          if (_isProcessing)
+          if (state.isProcessing)
             Container(
               color: Colors.black54,
               child: const Center(
