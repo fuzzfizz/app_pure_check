@@ -21,23 +21,15 @@ class ManualEntryController extends Notifier<ManualEntryState> {
     required String name,
     String? brand,
     required String ingredientsText,
+    bool isReview = false,
+    MasterProduct? existingProduct,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final product = MasterProduct(
-        barcode: barcode,
-        productName: name,
-        brand: brand,
-        source: 'user_submitted',
-        isVerified: false,
-      );
-
-      // Insert basic product info (Phase 2 schema doesn't have a raw text column for ingredients,
-      // this will be sent to the Edge Function in Phase 3/4)
-      await _productRepo.insertProduct(product);
-
-      // In a real app we might pass the ingredientsText to a phase 3 analysis screen here
+      // In Phase 4, we no longer insert the product directly from the client.
+      // We pass the data to the Analysis screen, and if the user is happy
+      // with the AI's analysis, they can choose to save it to the master database.
       
       state = state.copyWith(isLoading: false, isSuccess: true);
     } catch (e) {

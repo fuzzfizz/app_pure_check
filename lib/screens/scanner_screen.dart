@@ -54,7 +54,6 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       }
 
       if (next.shouldRouteToManualEntry) {
-         _cameraController.stop();
          context.pushReplacement('/manual-entry', extra: {
            'barcode': next.scannedBarcode,
          });
@@ -62,20 +61,12 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       }
 
       if (next.shouldRouteToProductReview) {
-         _cameraController.stop();
          context.pushReplacement('/manual-entry', extra: { // Using manual entry for review for now, or separate review screen
            'barcode': next.scannedBarcode,
            'product': next.foundProduct,
            'is_review': true,
          });
          ref.read(scannerControllerProvider.notifier).resetRouting();
-      }
-      
-      // Control camera based on isScanning state
-      if (next.isScanning && !(previous?.isScanning ?? true)) {
-         _cameraController.start();
-      } else if (!next.isScanning && (previous?.isScanning ?? false)) {
-         _cameraController.stop();
       }
     });
 

@@ -16,7 +16,7 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
   final _nameController = TextEditingController();
   final _brandController = TextEditingController();
   final _ingredientsController = TextEditingController();
-  
+
   String? _barcode;
   MasterProduct? _product;
   bool _isReview = false;
@@ -55,12 +55,16 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
       _barcode = 'MANUAL-${DateTime.now().millisecondsSinceEpoch}';
     }
 
-    ref.read(manualEntryControllerProvider.notifier).submitProduct(
-      barcode: _barcode!,
-      name: _nameController.text.trim(),
-      brand: _brandController.text.trim(),
-      ingredientsText: _ingredientsController.text.trim(),
-    );
+    ref
+        .read(manualEntryControllerProvider.notifier)
+        .submitProduct(
+          barcode: _barcode!,
+          name: _nameController.text.trim(),
+          brand: _brandController.text.trim(),
+          ingredientsText: _ingredientsController.text.trim(),
+          isReview: _isReview,
+          existingProduct: _product,
+        );
   }
 
   @override
@@ -75,15 +79,20 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
   Widget build(BuildContext context) {
     ref.listen(manualEntryControllerProvider, (previous, next) {
       if (next.error != null && previous?.error != next.error) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${next.error}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${next.error}')));
       }
       if (next.isSuccess && !(previous?.isSuccess ?? false)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product submitted successfully.')),
         );
-        context.go('/'); // Return to dashboard or previous screen
+        context.pushReplacement('/analysis', extra: {
+          'barcode': _barcode,
+          'product': _product,
+          'name': _nameController.text.trim(),
+          'ingredientsText': _ingredientsController.text.trim(),
+        });
       }
     });
 
@@ -137,28 +146,55 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () {
-                   // Future Phase: Take photo and run OCR
-                   ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('OCR feature coming in future update.')),
-                   );
+                  // Future Phase: Take photo and run OCR
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('OCR feature coming in future update.'),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.camera_alt),
                 label: const Text('Take Photo of Ingredients (Coming Soon)'),
                 style: ElevatedButton.styleFrom(
-                   backgroundColor: Colors.grey.shade200,
-                   foregroundColor: Colors.black87,
+                  backgroundColor: Colors.grey.shade200,
+                  foregroundColor: Colors.black87,
                 ),
               ),
             ],
             const SizedBox(height: 32),
             state.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : ElevatedButton(
-                    onPressed: _saveItem,
-                    style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16)),
-                    child: Text(_isReview ? 'Proceed to Analysis' : 'Submit Product'),
-                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _saveItem,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text(
+                          _isReview ? 'Proceed to Analysis' : 'Submit Product',
+                        ),
+                      ),
+                      if (_isReview) ...[
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: () {
+                            // Scenario 2.3: Rejection Flow
+                            setState(() {
+                              _isReview = false;
+                              _nameController.clear();
+                              _brandController.clear();
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          child: const Text('This is not my product'),
+                        ),
+                      ]
+                    ],
+                  ),
           ],
         ),
       ),

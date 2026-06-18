@@ -30,7 +30,7 @@ class ProductRepository {
 
   Future<void> insertProduct(MasterProduct product) async {
     try {
-      await _supabase.from('master_products').insert(product.toJson());
+      await _supabase.from('master_products').upsert(product.toJson());
     } catch (e) {
       throw Exception('Failed to insert product: $e');
     }

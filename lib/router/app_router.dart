@@ -8,6 +8,7 @@ import '../screens/profile_edit_screen.dart';
 import '../screens/allergen_selection_screen.dart';
 import '../screens/manual_entry_screen.dart';
 import '../screens/scanner_screen.dart';
+import '../screens/analysis_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -58,6 +59,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/scanner',
         builder: (context, state) => const ScannerScreen(),
+      ),
+      GoRoute(
+        path: '/analysis',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return AnalysisScreen(extraData: extra);
+        },
       ),
     ],
   );
