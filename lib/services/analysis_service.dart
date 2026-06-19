@@ -34,6 +34,23 @@ class AnalysisService {
     }
   }
 
+  Future<List<String>> extractIngredientsFromImage(String imageBase64) async {
+    try {
+      final response = await _supabase.functions.invoke(
+        'extract-ingredients',
+        body: {'imageBase64': imageBase64},
+      );
+
+      if (response.status == 200 && response.data != null) {
+        return List<String>.from(response.data['ingredients']);
+      } else {
+        throw Exception('Failed to extract ingredients: ${response.data?['error'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      throw Exception('OCR failed: $e');
+    }
+  }
+
   Future<Map<String, dynamic>?> fetchExternalProduct(String barcode) async {
     try {
       final response = await _supabase.functions.invoke(

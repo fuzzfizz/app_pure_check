@@ -4,6 +4,7 @@ class Ingredient {
   final String? description;
   final List<String> commonNames;
   final bool isKnownAllergen;
+  final bool isVerified;
 
   Ingredient({
     required this.id,
@@ -11,6 +12,7 @@ class Ingredient {
     this.description,
     this.commonNames = const [],
     this.isKnownAllergen = false,
+    this.isVerified = false,
   });
 
   factory Ingredient.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class Ingredient {
       description: json['description'],
       commonNames: List<String>.from(json['common_names'] ?? []),
       isKnownAllergen: json['is_known_allergen'] ?? false,
+      isVerified: json['is_verified'] ?? false,
     );
   }
 }

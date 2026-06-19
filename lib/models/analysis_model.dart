@@ -12,10 +12,25 @@ class FlaggedAllergen {
   }
 }
 
+class NormalizedIngredient {
+  final String original;
+  final String canonical;
+
+  NormalizedIngredient({required this.original, required this.canonical});
+
+  factory NormalizedIngredient.fromJson(Map<String, dynamic> json) {
+    return NormalizedIngredient(
+      original: json['original'] as String,
+      canonical: json['canonical'] as String,
+    );
+  }
+}
+
 class AnalysisModel {
   final bool isSafe;
   final int suitabilityScore;
   final List<FlaggedAllergen> flaggedAllergens;
+  final List<NormalizedIngredient> normalizedIngredients;
   final List<String> pros;
   final List<String> cons;
   final String reasoning;
@@ -24,6 +39,7 @@ class AnalysisModel {
     required this.isSafe,
     required this.suitabilityScore,
     required this.flaggedAllergens,
+    required this.normalizedIngredients,
     required this.pros,
     required this.cons,
     required this.reasoning,
@@ -35,6 +51,10 @@ class AnalysisModel {
       suitabilityScore: json['suitability_score'] as int? ?? 0,
       flaggedAllergens: (json['flagged_allergens'] as List<dynamic>?)
               ?.map((e) => FlaggedAllergen.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      normalizedIngredients: (json['normalized_ingredients'] as List<dynamic>?)
+              ?.map((e) => NormalizedIngredient.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
       pros: (json['pros'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
