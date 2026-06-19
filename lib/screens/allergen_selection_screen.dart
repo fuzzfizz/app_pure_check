@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../controllers/profile_controller.dart';
 
 class AllergenSelectionScreen extends ConsumerWidget {
@@ -37,6 +38,10 @@ class AllergenSelectionScreen extends ConsumerWidget {
             },
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/add-ingredient'),
+        child: const Icon(Icons.add),
       ),
     );
   }

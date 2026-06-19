@@ -55,4 +55,18 @@ class IngredientRepository {
       throw Exception('Failed to remove allergen: $e');
     }
   }
+
+  Future<void> insertIngredient(String name, String? description, List<String> commonNames, bool isKnownAllergen) async {
+    try {
+      await _supabase.from('ingredients').insert({
+        'name': name,
+        'description': description,
+        'common_names': commonNames,
+        'is_known_allergen': isKnownAllergen,
+        'is_verified': false, // User-submitted ingredients start unverified
+      });
+    } catch (e) {
+      throw Exception('Failed to insert ingredient: $e');
+    }
+  }
 }

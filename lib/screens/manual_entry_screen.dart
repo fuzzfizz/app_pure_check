@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
+import 'dart:io';
 import '../controllers/manual_entry_controller.dart';
+import '../services/analysis_service.dart';
 import '../models/master_product.dart';
 
 class ManualEntryScreen extends ConsumerStatefulWidget {
@@ -16,11 +20,13 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
   final _nameController = TextEditingController();
   final _brandController = TextEditingController();
   final _ingredientsController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
 
   String? _barcode;
   MasterProduct? _product;
   bool _isReview = false;
   bool _isVerification = false;
+  bool _isOcrProcessing = false;
 
   @override
   void initState() {
@@ -30,9 +36,14 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
       _product = widget.extraData!['product'] as MasterProduct?;
       _isReview = widget.extraData!['is_review'] ?? false;
       _isVerification = widget.extraData!['is_verification'] ?? false;
+      
+      final prefilledData = widget.extraData!['prefilledData'] as Map<String, dynamic>?;
 
-      final prefilledData =
-          widget.extraData!['prefilledData'] as Map<String, dynamic>?;
+      print('DEBUG: ManualEntryScreen initialized');
+      print('DEBUG: barcode: $_barcode');
+      print('DEBUG: isVerification: $_isVerification');
+      print('DEBUG: isReview: $_isReview');
+      print('DEBUG: prefilledData: $prefilledData');
 
       if (_product != null) {
         _nameController.text = _product!.productName;
@@ -42,6 +53,26 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
         _brandController.text = prefilledData['brand'] ?? '';
         _ingredientsController.text = prefilledData['ingredientsText'] ?? '';
       }
+    }
+  }
+
+  Future<void> _runOcr() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+    if (image == null) return;
+
+    setState(() => _isOcrProcessing = true);
+
+    try {
+      final bytes = await File(image.path).readAsBytes();
+      final base64Image = base64Encode(bytes);
+      final ingredients = await ref.read(analysisServiceProvider).extractIngredientsFromImage(base64Image);
+
+      _ingredientsController.text = ingredients.join(', ');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingredients extracted!')));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('OCR Error: $e')));
+    } finally {
+      setState(() => _isOcrProcessing = false);
     }
   }
 
@@ -109,10 +140,15 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
     });
 
     final state = ref.watch(manualEntryControllerProvider);
+    
+    // Determine title and warning message
+    final String appBarTitle = _isReview 
+        ? 'Confirm Product' 
+        : (_barcode != null && !_isVerification ? 'Barcode Not Found' : 'Manual Entry');
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isReview ? 'Confirm Details' : 'Manual Entry'),
+        title: Text(appBarTitle),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -121,16 +157,29 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
           children: [
             if (_barcode != null && !_isReview)
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(16),
                 margin: const EdgeInsets.only(bottom: 16),
-                color: _isVerification
-                    ? Colors.green.shade100
-                    : Colors.amber.shade100,
-                child: Text(
-                  _isVerification
-                      ? 'Product found in global database! Please verify the details below.'
-                      : 'Barcode not found. Please enter the details manually and provide the ingredients to help verify this product!',
-                  style: const TextStyle(color: Colors.black87),
+                decoration: BoxDecoration(
+                  color: _isVerification ? Colors.green.shade100 : Colors.red.shade50,
+                  border: Border.all(color: _isVerification ? Colors.green : Colors.red),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _isVerification ? Icons.check_circle : Icons.warning_amber_rounded,
+                      color: _isVerification ? Colors.green : Colors.red,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _isVerification
+                            ? 'Product found in global database! Please verify the details below.'
+                            : 'This barcode is not in our database. Please enter details manually.',
+                        style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             if (_barcode != null)
@@ -172,22 +221,17 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
                 maxLines: 5,
               ),
               const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Future Phase: Take photo and run OCR
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('OCR feature coming in future update.'),
+              _isOcrProcessing
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton.icon(
+                      onPressed: _runOcr,
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Scan Ingredients from Photo'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade100,
+                        foregroundColor: Colors.black87,
+                      ),
                     ),
-                  );
-                },
-                icon: const Icon(Icons.camera_alt),
-                label: const Text('Take Photo of Ingredients (Coming Soon)'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade200,
-                  foregroundColor: Colors.black87,
-                ),
-              ),
             ],
             const SizedBox(height: 32),
             state.isLoading

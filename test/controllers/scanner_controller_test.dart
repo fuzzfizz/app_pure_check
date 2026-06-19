@@ -36,6 +36,8 @@ void main() {
     // Setup: Cache miss
     when(() => mockProductRepository.getProductByBarcode(any()))
         .thenAnswer((_) async => null);
+    when(() => mockAnalysisService.fetchExternalProduct(any()))
+        .thenAnswer((_) async => null);
 
     final scannerController = container.read(scannerControllerProvider.notifier);
 
