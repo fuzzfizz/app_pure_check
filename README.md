@@ -9,6 +9,18 @@ Welcome to the official Flutter application for **PureCheck**, a centralized ski
 *   **Human-in-the-Loop Verification:** Crowdsourced verification for products not found in the master database.
 *   **Self-Feeding Knowledge Base:** Verified product data is cached to the Master Database via secure Edge Functions, ensuring fast future verification.
 
+## 📁 Project Structure (`app_pure_check/`)
+The `app_pure_check/` directory contains the core application. We adhere to Clean Architecture principles:
+
+- `android/` & `ios/`: Platform-specific configurations and build settings.
+- `lib/`: The core source code for the application.
+  - `controllers/`: Handles state management logic, bridging data between the services/repositories and the UI.
+  - `models/`: Defines the data structures (e.g., `AnalysisModel`, `Ingredient`) used throughout the app.
+  - `repositories/`: The data access layer, specifically interacting with Supabase to fetch/store data.
+  - `services/`: Interfaces with external APIs, such as the Google Gemini API (AI analysis) and Open Beauty Facts API.
+  - `screens/`: Contains the actual UI pages (Views) of the application.
+- `test/`: Contains unit and widget tests for ensuring quality and reliability.
+
 ## 🛠️ Tech Stack
 *   **Frontend:** Flutter (State Management: Riverpod)
 *   **Backend & Database:** Supabase (Auth, PostgreSQL, Edge Functions)
