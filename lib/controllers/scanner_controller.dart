@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/product_repository.dart';
+import '../services/analysis_service.dart';
 import '../states/scanner_state.dart';
 
 final scannerControllerProvider = NotifierProvider<ScannerController, ScannerState>(() {
@@ -8,10 +9,12 @@ final scannerControllerProvider = NotifierProvider<ScannerController, ScannerSta
 
 class ScannerController extends Notifier<ScannerState> {
   late final ProductRepository _productRepo;
+  late final AnalysisService _analysisService;
 
   @override
   ScannerState build() {
     _productRepo = ref.watch(productRepositoryProvider);
+    _analysisService = ref.watch(analysisServiceProvider);
     return const ScannerState();
   }
 
@@ -43,9 +46,12 @@ class ScannerController extends Notifier<ScannerState> {
           foundProduct: product,
         );
       } else {
+        // Cache miss: Try fetching from OBF, then route to verification
+        final externalData = await _analysisService.fetchExternalProduct(barcode);
         state = state.copyWith(
           isProcessing: false,
           shouldRouteToManualEntry: true,
+          prefilledData: externalData,
         );
       }
     } catch (e) {
@@ -61,6 +67,7 @@ class ScannerController extends Notifier<ScannerState> {
      state = state.copyWith(
        shouldRouteToManualEntry: false, 
        shouldRouteToProductReview: false,
+       shouldRouteToAnalysis: false,
        clearFoundProduct: true,
      );
   }

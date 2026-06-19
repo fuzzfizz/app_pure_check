@@ -56,6 +56,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
       if (next.shouldRouteToManualEntry) {
          context.pushReplacement('/manual-entry', extra: {
            'barcode': next.scannedBarcode,
+           'prefilledData': next.prefilledData,
+           'is_verification': next.prefilledData != null,
          });
          ref.read(scannerControllerProvider.notifier).resetRouting();
       }
@@ -65,6 +67,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
            'barcode': next.scannedBarcode,
            'product': next.foundProduct,
            'is_review': true,
+         });
+         ref.read(scannerControllerProvider.notifier).resetRouting();
+      }
+
+      if (next.shouldRouteToAnalysis) {
+         context.pushReplacement('/analysis', extra: {
+           'barcode': next.scannedBarcode,
+           'name': next.analysisResult != null ? 'Product' : 'Analyzed Product',
+           'ingredientsText': ' ', // Not needed as Edge Function fetches OBF
          });
          ref.read(scannerControllerProvider.notifier).resetRouting();
       }

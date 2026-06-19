@@ -20,6 +20,7 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
   String? _barcode;
   MasterProduct? _product;
   bool _isReview = false;
+  bool _isVerification = false;
 
   @override
   void initState() {
@@ -28,10 +29,18 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
       _barcode = widget.extraData!['barcode'];
       _product = widget.extraData!['product'] as MasterProduct?;
       _isReview = widget.extraData!['is_review'] ?? false;
+      _isVerification = widget.extraData!['is_verification'] ?? false;
+
+      final prefilledData =
+          widget.extraData!['prefilledData'] as Map<String, dynamic>?;
 
       if (_product != null) {
         _nameController.text = _product!.productName;
         _brandController.text = _product!.brand ?? '';
+      } else if (prefilledData != null) {
+        _nameController.text = prefilledData['productName'] ?? '';
+        _brandController.text = prefilledData['brand'] ?? '';
+        _ingredientsController.text = prefilledData['ingredientsText'] ?? '';
       }
     }
   }
@@ -87,12 +96,15 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Product submitted successfully.')),
         );
-        context.pushReplacement('/analysis', extra: {
-          'barcode': _barcode,
-          'product': _product,
-          'name': _nameController.text.trim(),
-          'ingredientsText': _ingredientsController.text.trim(),
-        });
+        context.pushReplacement(
+          '/analysis',
+          extra: {
+            'barcode': _barcode,
+            'product': _product,
+            'name': _nameController.text.trim(),
+            'ingredientsText': _ingredientsController.text.trim(),
+          },
+        );
       }
     });
 
@@ -111,10 +123,26 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 margin: const EdgeInsets.only(bottom: 16),
-                color: Colors.amber.shade100,
-                child: const Text(
-                  'Barcode not found. Please enter the details manually and provide the ingredients to help verify this product!',
-                  style: TextStyle(color: Colors.black87),
+                color: _isVerification
+                    ? Colors.green.shade100
+                    : Colors.amber.shade100,
+                child: Text(
+                  _isVerification
+                      ? 'Product found in global database! Please verify the details below.'
+                      : 'Barcode not found. Please enter the details manually and provide the ingredients to help verify this product!',
+                  style: const TextStyle(color: Colors.black87),
+                ),
+              ),
+            if (_barcode != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  'Barcode: $_barcode',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.blueGrey,
+                  ),
                 ),
               ),
             TextField(
@@ -173,7 +201,9 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: Text(
-                          _isReview ? 'Proceed to Analysis' : 'Submit Product',
+                          _isReview
+                              ? 'Proceed to Analysis'
+                              : 'Submit Product & Analysis',
                         ),
                       ),
                       if (_isReview) ...[
@@ -192,7 +222,7 @@ class _ManualEntryScreenState extends ConsumerState<ManualEntryScreen> {
                           ),
                           child: const Text('This is not my product'),
                         ),
-                      ]
+                      ],
                     ],
                   ),
           ],
